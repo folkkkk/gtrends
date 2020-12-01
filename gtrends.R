@@ -1,24 +1,28 @@
 library(dplyr)
-library(anomalize)
 library(ggplot2)
+#install.packages("anomalize")
+library(anomalize)
 #install.packages("gtrendsR")
 library(gtrendsR)
 #install.packages("prophet")
 library(prophet)
+#install.packages("plotly")
+library(plotly)
 
-gtrends_df = gtrends(c("Vaccine"), #keywords -- start with one
+gtrends_df = gtrends(c("Vaccine"), #keywords - start with one
                      gprop = "web", #choose: web, news, images, froogle, youtube
                      geo = c("US"), #only pull results for US (Country code)
                      time = "2010-01-01 2020-11-27")[[1]] #timeframe
 
 
 #visualize with ggplot (optional but useful if you're choosing between keywords)
+
 ggplot(data=gtrends_df, 
        aes(x=date, y=hits, group=keyword, col=keyword)) +
   geom_line() + 
   theme_bw() +
   labs(title = "Google Trends Data", 
-       subtitle="United States search volume", 
+       subtitle="Search volume", 
        x="Time", y="Relative Interest")
 
 # Prepare data
@@ -29,31 +33,34 @@ gtrends_df_tbl = gtrends_df %>%
 
 # Anomalize
 
-gtrends_df_tbl %>%
+gtrends <- gtrends_df_tbl %>%
   time_decompose(hits, method = "twitter", trend = "1 year") %>%
   anomalize(remainder, method = "gesd") %>%
   time_recompose() %>%
   plot_anomalies(time_recomposed = T) +
   labs(title = "google trends (Vaccine) - twitter + gesd method", x = "Time",t="Relative Interest", subtitle = "NL search volume for vote for the word Vaccine")
 
+ggplotly(gtrends)
 # Visualize inner workings off how algorithm detects anomalies in the remainder.
 
-gtrends_df_tbl %>%
+gtrends_decomposed <- gtrends_df_tbl %>%
   time_decompose(hits, method = "twitter", frequency = "1 year", trend = "1 year") %>%
   anomalize(remainder, metho = "gesd", alpha = 0.05, max_anoms = 0.2) %>%
   plot_anomaly_decomposition()
 
+ggplotly(gtrends_decomposed)
+
 # EXTRA -> Forecasting
 
-gdf <- gtrends_df %>%
+gtrends_df_for <- gtrends_df %>%
   mutate(date=lubridate::ymd(date)) %>% #parse date
   tbl_df() %>%
   mutate(ds=date,y=hits) %>%
   select(ds,y) #format for prophet
 
-gdf$cap <- 100 #google trends hits is a normalized value
-gdf$floor <- 0 #ranges from 0-100
-m <- prophet(gdf,growth = "logistic")
+gtrends_df_for$cap <- 100 #google trends hits is a normalized value
+gtrends_df_for$floor <- 0 #ranges from 0-100
+m <- prophet(gtrends_df_for,growth = "logistic")
 
 future <- make_future_dataframe(m, periods = 52, freq = "week")
 future$cap <- 100
@@ -66,7 +73,7 @@ forecast %>%
          "forecast" = "yhat",
          "forecast_lower" = "yhat_lower",
          "forecast_upper" = "yhat_upper") %>%
-  filter(week>="2019-01-01")
+  filter(week>="2010-01-01")
 
-plot(m, forecast)
-
+gtrends_forecast <- plot(m, forecast)
+ggplotly(gtrends_forecast+ggtitle("Google trends forecast - Logistic trend")+ylab("Relative Interest")+xlab("Time"))
