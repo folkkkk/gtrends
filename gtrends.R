@@ -1,10 +1,9 @@
 library(dplyr)
 library(anomalize)
-library(tibbletime)
 library(ggplot2)
-library(reshape2)
-library(tidyverse)
+#install.packages("gtrendsR")
 library(gtrendsR)
+#install.packages("prophet")
 library(prophet)
 
 gtrends_df = gtrends(c("Vaccine"), #keywords -- start with one
