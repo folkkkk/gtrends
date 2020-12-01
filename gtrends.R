@@ -37,7 +37,7 @@ gtrends_df_tbl %>%
   plot_anomalies(time_recomposed = T) +
   labs(title = "google trends (Vaccine) - twitter + gesd method", x = "Time",t="Relative Interest", subtitle = "NL search volume for vote for the word Vaccine")
 
-# Identify anomalies. 2010 - SARS, 2020 - COVID vacine (pfizer?)
+# Visualize inner workings off how algorithm detects anomalies in the remainder.
 
 gtrends_df_tbl %>%
   time_decompose(hits, method = "twitter", frequency = "1 year", trend = "1 year") %>%
